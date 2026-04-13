@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RL Navigation Live Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="http://localhost:4100/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-glow glow-one"></div>
+    <div class="bg-glow glow-two"></div>
+
+    <main class="container">
+      <nav class="main-nav panel">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link active" href="/monitor.html">Live Monitor</a>
+      </nav>
+
+      <header id="overview" class="hero panel">
+        <p class="eyebrow">Realtime RL Observability</p>
+        <h1>Robot Navigation Live Dashboard</h1>
+        <p class="subtitle">
+          Streaming PPO training metrics and agent trajectories from the simulator.
+        </p>
+        <div class="status-row">
+          <span id="server-status" class="status-pill">Server: connecting</span>
+          <span id="train-status" class="status-pill">Training: idle</span>
+        </div>
+      </header>
+
+      <section class="metrics-grid" id="metrics">
+        <article class="metric-card panel pop-in">
+          <p>Episode</p>
+          <h2 id="episode-value">0</h2>
+        </article>
+        <article class="metric-card panel pop-in" style="animation-delay: 60ms">
+          <p>Reward (latest)</p>
+          <h2 id="reward-value">0.00</h2>
+        </article>
+        <article class="metric-card panel pop-in" style="animation-delay: 120ms">
+          <p>Success Rate</p>
+          <h2 id="success-value">0%</h2>
+        </article>
+        <article class="metric-card panel pop-in" style="animation-delay: 180ms">
+          <p>Collision Rate</p>
+          <h2 id="collision-value">0%</h2>
+        </article>
+      </section>
+
+      <section class="panel chart-panel pop-in" style="animation-delay: 220ms" id="charts">
+        <h3>Reward Per Episode</h3>
+        <canvas id="reward-chart"></canvas>
+      </section>
+
+      <section class="panel chart-panel pop-in" style="animation-delay: 280ms">
+        <h3>Success / Collision Trend</h3>
+        <canvas id="trend-chart"></canvas>
+      </section>
+
+      <section class="panel trajectory-panel pop-in" style="animation-delay: 340ms" id="trajectory">
+        <div class="trajectory-head">
+          <h3>Robot Safety Run (Walls + Floor Tape)</h3>
+          <div class="trajectory-status">
+            <span id="steps-value">Steps: 0</span>
+            <span id="event-value" class="event-pill neutral">Outcome: waiting</span>
+          </div>
+        </div>
+        <canvas id="trajectory-canvas" width="620" height="620"></canvas>
+        <div class="safety-legend">
+          <span><i class="swatch wall"></i> Arena walls</span>
+          <span><i class="swatch tape"></i> Floor tape hazard</span>
+          <span><i class="swatch goal"></i> Docking goal</span>
+          <span><i class="swatch path"></i> Robot path</span>
+        </div>
+      </section>
+
+      <section class="panel quick-panel pop-in" style="animation-delay: 400ms">
+        <h3>Quick Links</h3>
+        <div class="quick-links">
+          <a href="#overview">Overview</a>
+          <a href="#metrics">Metrics</a>
+          <a href="#charts">Charts</a>
+          <a href="#trajectory">Trajectory</a>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

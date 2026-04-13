@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RL Navigation Control Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-glow glow-one"></div>
+    <div class="bg-glow glow-two"></div>
+
+    <main class="container">
+      <nav class="main-nav panel">
+        <a class="nav-link active" href="/">Home</a>
+        <a class="nav-link" href="/monitor.html">Live Monitor</a>
+      </nav>
+
+      <header class="hero panel pop-in">
+        <p class="eyebrow">RL Navigation Platform</p>
+        <h1>Control Center</h1>
+        <p class="subtitle">
+          Use this frontend to launch into live training observability, track metrics, and follow setup steps quickly.
+        </p>
+      </header>
+
+      <section class="landing-grid">
+        <article class="panel landing-card pop-in" style="animation-delay: 80ms">
+          <h2>Live Monitor</h2>
+          <p>
+            Real-time reward, success/collision trends, and trajectory playback from your PPO training episodes.
+          </p>
+          <a class="btn-link" href="/monitor.html">Open Dashboard</a>
+        </article>
+
+        <article class="panel landing-card pop-in" style="animation-delay: 140ms">
+          <h2>Quick Start</h2>
+          <p>Run these services in separate terminals:</p>
+          <pre><code>cd server && npm start
+cd dashboard && npm start
+cd sim && source venv/bin/activate && python train.py</code></pre>
+        </article>
+      </section>
+
+      <section class="panel quick-panel pop-in" style="animation-delay: 200ms">
+        <h3>Navigation Tips</h3>
+        <ul class="flat-list">
+          <li>Use <strong>Home</strong> to access setup and entry points.</li>
+          <li>Use <strong>Live Monitor</strong> for real-time charts and trajectory visualization.</li>
+          <li>Backend health endpoint: <code>http://localhost:4100/health</code>.</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
