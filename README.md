@@ -2,6 +2,10 @@
 
 A full reinforcement learning project where a PPO agent learns 2D robot navigation and streams live training telemetry to a web dashboard.
 
+## Tuning log
+
+- Full tuning history and hardening updates: [docs/tuning/TUNING_README.md](docs/tuning/TUNING_README.md)
+
 ## Demo GIF
 
 ![Robot Safety Run Demo](dashboard/public/demo_robot_safety_run.gif)
