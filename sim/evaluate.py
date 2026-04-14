@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 from stable_baselines3 import PPO
@@ -11,13 +12,44 @@ from env.robot_nav_env import RobotNavEnv
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate trained PPO/RecurrentPPO agent")
-    parser.add_argument("--model-path", type=str, default="models/ppo_robot_nav.zip")
+    parser.add_argument(
+        "--model-path",
+        type=str,
+        default=None,
+        help=(
+            "Model file to evaluate. If omitted, auto-selects "
+            "models/ppo_robot_nav_best_model/best_model.zip, then "
+            "models/best_model/best_model.zip, then models/ppo_robot_nav.zip."
+        ),
+    )
     parser.add_argument("--episodes", type=int, default=100)
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--obstacle-count", type=int, default=22)
     parser.add_argument("--stochastic", action="store_true")
     parser.add_argument("--algo", type=str, default="auto", choices=["auto", "ppo", "recurrent_ppo"])
     return parser.parse_args()
+
+
+def resolve_model_path(model_path: str | None) -> Path:
+    if model_path:
+        resolved = Path(model_path)
+        if not resolved.exists():
+            raise FileNotFoundError(f"Model not found: {resolved}")
+        return resolved
+
+    for candidate in [
+        Path("models/ppo_robot_nav_best_model/best_model.zip"),
+        Path("models/best_model/best_model.zip"),
+        Path("models/ppo_robot_nav.zip"),
+    ]:
+        if candidate.exists():
+            return candidate
+
+    raise FileNotFoundError(
+        "No default model found. Provide --model-path explicitly or create one of: "
+        "models/ppo_robot_nav_best_model/best_model.zip, "
+        "models/best_model/best_model.zip, models/ppo_robot_nav.zip"
+    )
 
 
 def load_model(model_path: str, algo: str):
@@ -40,8 +72,9 @@ def load_model(model_path: str, algo: str):
 
 def main() -> None:
     args = parse_args()
+    resolved_model_path = resolve_model_path(args.model_path)
     env = RobotNavEnv(seed=args.seed, obstacle_count=args.obstacle_count)
-    model, is_recurrent = load_model(args.model_path, args.algo)
+    model, is_recurrent = load_model(str(resolved_model_path), args.algo)
 
     rewards: list[float] = []
     successes = 0
@@ -84,6 +117,7 @@ def main() -> None:
         steps.append(step_count)
 
     print("Evaluation complete")
+    print(f"Model path: {resolved_model_path}")
     print(f"Episodes: {args.episodes}")
     print(f"Obstacle count: {args.obstacle_count}")
     print(f"Deterministic policy: {not args.stochastic}")

@@ -32,6 +32,15 @@ class RobotNavEnv(gym.Env[np.ndarray, int]):
         super().__init__()
         self.grid_size = grid_size
         self.max_steps = max_steps
+
+        max_obstacles = (self.grid_size * self.grid_size) - 2
+        if obstacle_count < 0:
+            raise ValueError("obstacle_count must be >= 0")
+        if obstacle_count > max_obstacles:
+            raise ValueError(
+                f"obstacle_count={obstacle_count} exceeds max available cells ({max_obstacles}) "
+                "after reserving agent and goal cells."
+            )
         self.obstacle_count = obstacle_count
         self.revisit_penalty = revisit_penalty
         self.near_hazard_penalty = near_hazard_penalty
@@ -67,14 +76,22 @@ class RobotNavEnv(gym.Env[np.ndarray, int]):
                 return pos
 
     def _generate_obstacles(self, forbidden: set[tuple[int, int]]) -> set[tuple[int, int]]:
-        obstacles: set[tuple[int, int]] = set()
-        while len(obstacles) < self.obstacle_count:
-            pos = self.rng.integers(0, self.grid_size, size=2, dtype=np.int32)
-            key = (int(pos[0]), int(pos[1]))
-            if key in forbidden:
-                continue
-            obstacles.add(key)
-        return obstacles
+        available = [
+            (x, y)
+            for x in range(self.grid_size)
+            for y in range(self.grid_size)
+            if (x, y) not in forbidden
+        ]
+        if self.obstacle_count > len(available):
+            raise ValueError(
+                f"obstacle_count={self.obstacle_count} exceeds available free cells ({len(available)}) "
+                "for this episode reset."
+            )
+        if self.obstacle_count == 0:
+            return set()
+
+        sampled_idx = np.atleast_1d(self.rng.choice(len(available), size=self.obstacle_count, replace=False))
+        return {available[int(idx)] for idx in sampled_idx}
 
     def _distance_to_goal(self) -> float:
         return float(np.linalg.norm(self.goal_pos - self.agent_pos))

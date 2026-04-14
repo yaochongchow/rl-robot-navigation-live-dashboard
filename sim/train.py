@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 from pathlib import Path
 
 from stable_baselines3.common.callbacks import CallbackList, EvalCallback
@@ -29,7 +30,7 @@ def parse_args() -> argparse.Namespace:
         help="Comma-separated obstacle counts for staged curriculum learning (use 22 to always keep obstacles on).",
     )
     parser.add_argument("--eval-freq", type=int, default=12_000)
-    parser.add_argument("--n-eval-episodes", type=int, default=30)
+    parser.add_argument("--n-eval-episodes", type=int, default=100)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--n-steps", type=int, default=512)
     parser.add_argument("--batch-size", type=int, default=256)
@@ -41,6 +42,19 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=0.20,
         help="Normalized ray-distance threshold below which hazard proximity penalty applies.",
+    )
+    parser.add_argument("--run-id", type=str, default=None)
+    parser.add_argument(
+        "--best-model-dir",
+        type=str,
+        default=None,
+        help="Directory to save EvalCallback best checkpoint into. Defaults to model-specific path.",
+    )
+    parser.add_argument(
+        "--eval-log-dir",
+        type=str,
+        default=None,
+        help="Directory to save EvalCallback evaluation logs into. Defaults to model-specific path.",
     )
     parser.add_argument("--progress-bar", action="store_true")
     return parser.parse_args()
@@ -110,6 +124,7 @@ def split_timesteps(total_timesteps: int, phase_count: int) -> list[int]:
 
 def main() -> None:
     args = parse_args()
+    run_id = args.run_id or datetime.now().strftime("run_%Y%m%d_%H%M%S")
     model_path = Path(args.model_path)
     model_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -157,20 +172,56 @@ def main() -> None:
                 )
             ]
         )
-    best_model_dir = model_path.parent / "best_model"
-    eval_log_dir = model_path.parent / "eval_logs"
+    best_model_dir = (
+        Path(args.best_model_dir)
+        if args.best_model_dir
+        else model_path.parent / f"{model_path.stem}_best_model"
+    )
+    eval_log_dir = (
+        Path(args.eval_log_dir)
+        if args.eval_log_dir
+        else model_path.parent / f"{model_path.stem}_eval_logs"
+    )
     best_model_dir.mkdir(parents=True, exist_ok=True)
     eval_log_dir.mkdir(parents=True, exist_ok=True)
 
+    eval_obstacle_count = curriculum[-1]
+    eval_freq_steps = max(args.eval_freq // max(args.num_envs, 1), 1)
+    best_model_file = best_model_dir / "best_model.zip"
+
+    print(f"Run id: {run_id}")
+    print(f"Model output: {model_path}.zip")
+    print(f"Best checkpoint dir: {best_model_dir}")
+    print(f"Eval log dir: {eval_log_dir}")
+    print(
+        "Eval protocol: "
+        f"episodes={args.n_eval_episodes}, obstacle_count={eval_obstacle_count}, "
+        f"deterministic=True, eval_freq_env_steps={eval_freq_steps}"
+    )
+
     emitter = MetricsEmitter(base_url=args.server_url)
-    emitter.send_status({"status": "training_started"})
+    emitter.send_status(
+        {
+            "status": "training_started",
+            "run_id": run_id,
+            "model_output_path": str(model_path.with_suffix(".zip")),
+            "best_model_dir": str(best_model_dir),
+            "eval_log_dir": str(eval_log_dir),
+            "eval_protocol": {
+                "episodes": args.n_eval_episodes,
+                "obstacle_count": eval_obstacle_count,
+                "deterministic": True,
+                "eval_freq_env_steps": eval_freq_steps,
+            },
+        }
+    )
 
     metrics_callback = TrainingMetricsCallback(emitter=emitter)
     eval_callback = EvalCallback(
         eval_env=eval_env,
         best_model_save_path=str(best_model_dir),
         log_path=str(eval_log_dir),
-        eval_freq=max(args.eval_freq // max(args.num_envs, 1), 1),
+        eval_freq=eval_freq_steps,
         n_eval_episodes=args.n_eval_episodes,
         deterministic=True,
         render=False,
@@ -210,13 +261,16 @@ def main() -> None:
                 if metrics_callback.episode_count
                 else 0.0
             ),
+            "run_id": run_id,
             "algo": args.algo,
             "curriculum": curriculum,
-            "best_model_path": str(best_model_dir),
+            "model_output_path": str(model_path.with_suffix(".zip")),
+            "best_model_path": str(best_model_file),
+            "eval_log_dir": str(eval_log_dir),
         }
     )
     print(f"Model saved to {model_path}.zip")
-    print(f"Best eval model saved under {best_model_dir}")
+    print(f"Best eval model saved to {best_model_file}")
 
     eval_env.close()
     vec_env.close()

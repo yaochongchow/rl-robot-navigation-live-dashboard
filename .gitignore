@@ -12,6 +12,9 @@ node_modules/
 
 # Artifacts
 sim/models/*.zip
+sim/models/best_model/
+sim/models/eval_logs/
+sim/models/runs/
 sim/logs/
 sim/results/
 *.DS_Store
